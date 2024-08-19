@@ -5,7 +5,7 @@ This project is a part of the [MLOps Zoomcamp](https://github.com/DataTalksClub/
 
 ## Table of Content
 
-- [Text Analyzer](#text-analyzer)
+- [Sarcasm Detection](#sarcasm-detection)
   - [Table of Content](#table-of-content)
   - [Problem Statement](#problem-statement)
   - [Pre-requisites](#pre-requisites)
