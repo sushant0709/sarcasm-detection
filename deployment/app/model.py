@@ -13,7 +13,7 @@ import mlflow
 import pandas as pd
 import unidecode
 import contractions
-from utils.emoticons import EMOTICONS
+from utils.cleaning import remove_features, rem_non_ascii, remove_stops, lemmatize_sentence
 
 
 class ModelService:
@@ -90,50 +90,16 @@ class ModelService:
         Returns:
             str: Cleaned and preprocessed text.
         """
-        # Convert the text to lowercase
-        text = text.lower()
+        # Remove features
+        res = remove_features(text)
+        # Remove non-ascii characters
+        res1 = rem_non_ascii(res)
+        # Remove stop words
+        res2 = remove_stops(res1)
+        # Lemmatize the sentence
+        res3 = lemmatize_sentence(res2)
 
-        # Remove HTML entities and special characters
-        text = re.sub(r'(&amp;|&lt;|&gt;|\n|\t)', ' ', text)
-
-        # Remove URLs
-        text = re.sub(r'https?://\S+|www\.\S+', ' ', text)  # remove urls
-
-        # Remove email addresses
-        text = re.sub(r'\S+@\S+', ' ', text)
-
-        # Remove dates in various formats (e.g., DD-MM-YYYY, MM/DD/YY)
-        text = re.sub(r'\d{1,2}(st|nd|rd|th)?[-./]\d{1,2}[-./]\d{2,4}', ' ', text)
-
-        # Remove month-day-year patterns (e.g., Jan 1st, 2022)
-        pattern = re.compile(
-            r'(\d{1,2})?(st|nd|rd|th)?[-./,]?\s?(of)?\s?([J|j]an(uary)?|[F|f]eb(ruary)?|[Mm]ar(ch)?|[Aa]pr(il)?|[Mm]ay|[Jj]un(e)?|[Jj]ul(y)?|[Aa]ug(ust)?|[Ss]ep(tember)?|[Oo]ct(ober)?|[Nn]ov(ember)?|[Dd]ec(ember)?)\s?(\d{1,2})?(st|nd|rd|th)?\s?[-./,]?\s?(\d{2,4})?'
-        )
-        text = pattern.sub(r' ', text)
-
-        # Remove emoticons
-        emoticons_pattern = re.compile(
-            u'(' + u'|'.join(emo for emo in EMOTICONS) + u')'
-        )
-        text = emoticons_pattern.sub(r' ', text)
-
-        # Remove mentions (@) and hashtags (#)
-        text = re.sub(r'(@\S+|#\S+)', ' ', text)
-
-        # Fix contractions (e.g., "I'm" becomes "I am")
-        text = contractions.fix(text)
-
-        # Remove punctuation
-        PUNCTUATIONS = string.punctuation
-        text = text.translate(str.maketrans('', '', PUNCTUATIONS))
-
-        # Remove unicode
-        text = unidecode.unidecode(text)
-
-        # Replace multiple whitespaces with a single space
-        text = re.sub(r'\s+', ' ', text)
-
-        return text
+        return res3
 
     def predict(self, data):
         """

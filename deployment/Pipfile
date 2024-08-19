@@ -4,20 +4,17 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+contractions = "==0.1.73"
+fastapi = "==0.112.1"
+mangum = "==0.17.0"
+mlflow = "==2.15.1"
+nltk = "==3.7"
+pandas = "==1.5.3"
+unidecode = "==1.2.0"
+uvicorn = "==0.30.6"
 boto3 = "*"
-mangum = "*"
-fastapi = "*"
-scikit-learn = "*"
-mlflow = "==2.5.0"
-pydantic = "==1.10.8"
-uvicorn = {version = "*", extras = ["standard"]}
-contractions = "*"
-unidecode = "*"
-psutil = "==5.9.5"
 
 [dev-packages]
-requests = "*"
 
 [requires]
-python_version = "3.9"
-python_full_version = "3.9.16"
+python_version = "3.11"

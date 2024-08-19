@@ -56,10 +56,13 @@ def prediction(data: str):
     Returns:
         JSONResponse: A JSON response containing the prediction.
     """
+    prediction_mapping = {
+        0: ""
+    }
     y_pred = model_service.predict(data)
     return JSONResponse(
         {
-            'prediction': int(y_pred),
+            'prediction': 'sarcastic' if int(y_pred) == 1 else 'non-sarcastic',
         }
     )
 
