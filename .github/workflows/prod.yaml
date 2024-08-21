@@ -1,10 +1,11 @@
-name: Dev-Environment-CI-CD
+name: Production-Environment-CI-CD
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
+    types: closed
     branches:
-      - 'feature/*'
+      - main
 
 permissions:
   contents: read
@@ -34,7 +35,7 @@ jobs:
   build-infrastructure:
     name: Build Infrastructure
     runs-on: ubuntu-latest
-    environment: dev
+    environment: prod
     needs: test
     outputs:
       ecr_repo: ${{ steps.tf-apply.outputs.ecr_repo }}
@@ -92,12 +93,30 @@ jobs:
           echo "model_registry_bucket=$(terraform output -raw model_registry_model_bucket)" >> $GITHUB_OUTPUT
           echo "lambda_function=$(terraform output -raw lambda_function)" >> $GITHUB_OUTPUT
 
+  sync-model-registry:
+    name: Sync Model Registry
+    runs-on: ubuntu-latest
+    environment: prod
+    needs: build-infrastructure
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Sync Model Registry
+        env:
+          FROM_BUCKET: s3://${{ secrets.STG_MODEL_REGISTRY }}/${{ secrets.EXPERIMENT_ID }}/${{ secrets.RUN_ID }}
+          TO_BUCKET: s3://${{ needs.build-infrastructure.outputs.model_registry_bucket }}/${{ secrets.EXPERIMENT_ID }}/${{ secrets.RUN_ID }}
+        run: aws s3 sync $FROM_BUCKET $TO_BUCKET
 
   build-and-deploy:
     name: Build and Deploy
     runs-on: ubuntu-latest
-    environment: dev
-    needs: build-infrastructure
+    environment: prod
+    needs: [build-infrastructure, sync-model-registry]
 
     steps:
       - name: Checkout Code
@@ -139,30 +158,13 @@ jobs:
           LAMBDA_FUNCTION: ${{ needs.build-infrastructure.outputs.lambda_function }}
           IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ needs.build-infrastructure.outputs.ecr_repo }}:latest
         run: |
-          STATE=$(aws lambda get-function --function-name $LAMBDA_FUNCTION --region "us-west-2" --query 'Configuration.LastUpdateStatus' --output text)
+          STATE=$(aws lambda get-function --function-name $LAMBDA_FUNCTION --region "us-east-1" --query 'Configuration.LastUpdateStatus' --output text)
               while [[ "$STATE" == "InProgress" ]]
               do
                   echo "sleep 5sec ...."
                   sleep 5s
-                  STATE=$(aws lambda get-function --function-name $LAMBDA_FUNCTION --region "us-west-2" --query 'Configuration.LastUpdateStatus' --output text)
+                  STATE=$(aws lambda get-function --function-name $LAMBDA_FUNCTION --region "us-east-1" --query 'Configuration.LastUpdateStatus' --output text)
                   echo $STATE
               done
 
           aws lambda update-function-code --function-name $LAMBDA_FUNCTION --image-uri $IMAGE_URI
-
-  push_to_staging:
-    name: Push Changes to Staging Environment
-    runs-on: ubuntu-latest
-    needs: build-and-deploy
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Merge Development -> Staging
-        uses: devmasx/merge-branch@master
-        with:
-          type: now
-          target_branch: staging
-          message: Merge development -> staging environment
-          github_token: ${{ secrets.GH_TOKEN }}
