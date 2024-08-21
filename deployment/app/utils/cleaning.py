@@ -19,6 +19,9 @@ from nltk import pos_tag
 from nltk.corpus import wordnet
 nltk.download("punkt")
 nltk.download("stopwords")
+nltk.download('averaged_perceptron_tagger')
+nltk.download('wordnet')
+nltk.download('omw-1.4')
 from nltk.corpus import stopwords
 
 def remove_features(data_str):

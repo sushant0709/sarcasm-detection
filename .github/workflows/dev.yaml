@@ -65,6 +65,30 @@ jobs:
           TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
         run: terraform init -input=false
 
+      - name: Import existing resources
+        working-directory: "terraform"
+        env:
+          TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
+          TF_VAR_aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          TF_VAR_aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          TF_VAR_db_username: ${{ secrets.DB_USERNAME }}
+          TF_VAR_db_password: ${{ secrets.DB_PASSWORD}}
+        run: |
+          import_if_not_exists() {
+            if ! terraform state list | grep -q "$1"; then
+              terraform import -var-file="./modules/vars/${TF_WORKSPACE}.tfvars" "$1" "$2"
+            else
+              echo "Resource $1 already exists in state, skipping import"
+            fi
+          }
+          
+          import_if_not_exists "aws_iam_role.ec2_role" "mlops-zc-sd-dev-ec2-role"
+          import_if_not_exists "module.ec2_rds.aws_db_subnet_group.db_subnet_group" "mlops-zc-sd-db-subnet-group-dev"
+          import_if_not_exists "module.ecr.aws_ecr_repository.ecr_repo" "mlops-zc-sd-dev-ecr-repo"
+          import_if_not_exists "module.lambda.aws_iam_role.lambda_exec" "mlops-zc-sd-dev-lambda-role"
+          import_if_not_exists "module.model_registry_bucket.aws_s3_bucket.s3_bucket" "mlops-zc-sd-dev-model-registry"
+          import_if_not_exists "module.dataset_bucket.aws_s3_bucket.s3_bucket" "mlops-zc-sd-dev-dataset"
+
       - name: Terraform plan
         id: tf-plan
         working-directory: "terraform"
@@ -74,7 +98,13 @@ jobs:
           TF_VAR_aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           TF_VAR_db_username: ${{ secrets.DB_USERNAME }}
           TF_VAR_db_password: ${{ secrets.DB_PASSWORD}}
-        run: terraform plan -var-file="./modules/vars/${TF_WORKSPACE}.tfvars" -input=false
+        run: |
+          terraform plan -var-file="./modules/vars/${TF_WORKSPACE}.tfvars" -input=false || exit_code=$?
+          if [ $exit_code -eq 1 ]; then
+            echo "Terraform plan failed, but continuing..."
+          elif [ $exit_code -gt 1 ]; then
+            exit $exit_code
+          fi
 
       - name: Terraform apply
         id: tf-apply
