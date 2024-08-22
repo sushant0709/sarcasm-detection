@@ -17,7 +17,7 @@ Usage:
 
 Note: The API should expect a 'data' parameter with the text to predict on and return a JSON response with a 'prediction' key.
 
-Author: Sagar Thacker
+Author: Sushant Khattar
 """
 
 import os
@@ -37,13 +37,12 @@ def predict(text):
         text (str): Input text to predict on.
 
     Returns:
-        str: Prediction result indicating whether the text is related to a natural disaster or not.
+        str: Prediction result indicating whether the text is sarcastic or not.
     """
     query_params = {'data': text}
     response = requests.get(API_URL, params=query_params, timeout=60).json()
-    if response['prediction'] == 0:
-        return 'Non-Disastrous'
-    return 'Disastrous'
+    return response['prediction']
+
 
 
 with gr.Blocks() as demo:
@@ -59,9 +58,9 @@ with gr.Blocks() as demo:
 
     examples = gr.Examples(
         [
-            "Just happened a terrible car crash",
-            "We're shaking...It's an earthquake",
-            "What a nice hat?",
+            "Wow, I just love being stuck in traffic for hours!",
+            "Great, another software update that will totally not ruin everything.",
+            "Oh sure, I'd love to work overtime on a Friday night.",
         ],
         inputs=text,
     )
