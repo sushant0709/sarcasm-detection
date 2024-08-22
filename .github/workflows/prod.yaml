@@ -61,14 +61,14 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
       - name: Initialize Terraform Configuration
-        working-directory: "terraform"
+        working-directory: 'terraform'
         env:
           TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
         run: terraform init -input=false
 
       - name: Terraform plan
         id: tf-plan
-        working-directory: "terraform"
+        working-directory: 'terraform'
         env:
           TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
           TF_VAR_aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -79,7 +79,7 @@ jobs:
 
       - name: Terraform apply
         id: tf-apply
-        working-directory: "terraform"
+        working-directory: 'terraform'
         if: ${{ steps.tf-plan.outcome }} == 'success'
         env:
           TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
@@ -135,7 +135,7 @@ jobs:
 
       - name: Print variable
         id: print-variable
-        working-directory: "deployment"
+        working-directory: 'deployment'
         run: |
           echo 'Model Registry:  ${{ steps.login-ecr.outputs.registry }}'
           echo 'ECR Repo:  ${{ needs.build-infrastructure.outputs.ecr_repo }}'
@@ -158,12 +158,12 @@ jobs:
           LAMBDA_FUNCTION: ${{ needs.build-infrastructure.outputs.lambda_function }}
           IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/${{ needs.build-infrastructure.outputs.ecr_repo }}:latest
         run: |
-          STATE=$(aws lambda get-function --function-name $LAMBDA_FUNCTION --region "us-east-1" --query 'Configuration.LastUpdateStatus' --output text)
+          STATE=$(aws lambda get-function --function-name $LAMBDA_FUNCTION --region "us-west-2" --query 'Configuration.LastUpdateStatus' --output text)
               while [[ "$STATE" == "InProgress" ]]
               do
                   echo "sleep 5sec ...."
                   sleep 5s
-                  STATE=$(aws lambda get-function --function-name $LAMBDA_FUNCTION --region "us-east-1" --query 'Configuration.LastUpdateStatus' --output text)
+                  STATE=$(aws lambda get-function --function-name $LAMBDA_FUNCTION --region "us-west-2" --query 'Configuration.LastUpdateStatus' --output text)
                   echo $STATE
               done
 
