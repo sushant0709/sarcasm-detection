@@ -15,6 +15,14 @@ COPY [ "Pipfile", "Pipfile.lock", "./" ]
 
 RUN pipenv install --system --deploy
 
+# Ensure NLTK is installed
+RUN pip install nltk
+
+RUN python -m nltk.downloader punkt stopwords averaged_perceptron_tagger wordnet omw-1.4
+
+# Set the NLTK_DATA environment variable
+ENV NLTK_DATA=/opt/nltk_data
+
 COPY ./app ${LAMBDA_TASK_ROOT}
 
 CMD [ "main.handler" ]
