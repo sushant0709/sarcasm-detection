@@ -11,7 +11,10 @@ install-aws-cli:
 	sudo apt install unzip
 	cd downloads && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && sudo ./aws/install
 
-test:
+download-nltk-data:
+	pipenv run python -m nltk.downloader punkt stopwords averaged_perceptron_tagger wordnet omw-1.4
+
+test: download-nltk-data
 	pytest tests/unit_tests
 
 # integration_test:
@@ -31,7 +34,7 @@ quality_checks:
 # publish: build integration_test
 # 	LOCAL_IMAGE_NAME=${LOCAL_IMAGE_NAME} bash scripts/publish.sh
 
-setup:
+setup: download-nltk-data
 	# Install pipenv
 	pip install --upgrade pip
 	pip install pipenv

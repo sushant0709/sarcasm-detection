@@ -29,6 +29,9 @@ jobs:
           pip install --upgrade pip
           pip install pipenv && pipenv install --dev
 
+      - name: Download NLTK data
+        run: pipenv run python -m nltk.downloader punkt stopwords averaged_perceptron_tagger wordnet omw-1.4
+
       - name: Run unit tests
         run: pipenv run pytest tests/unit_tests/
 
