@@ -11,6 +11,7 @@ Functions:
 """
 
 import re
+import os
 import nltk
 import string
 import nltk
@@ -20,19 +21,9 @@ from nltk import pos_tag
 from nltk.corpus import wordnet
 from nltk.corpus import stopwords
 
-# Set NLTK data path
-nltk.data.path.append("/tmp/nltk_data")
-
-# Ensure NLTK data is available
-def ensure_nltk_data():
-    for resource in ["punkt", "stopwords", "averaged_perceptron_tagger", "wordnet", "omw-1.4"]:
-        try:
-            nltk.data.find(f"tokenizers/{resource}")
-        except LookupError:
-            nltk.download(resource, quiet=True)
-
-# Call this function at the start of your script
-ensure_nltk_data()
+# Check if we're running in a Lambda environment
+if os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    nltk.data.path.append("/opt/nltk_data")
 
 def remove_features(data_str):
     """
