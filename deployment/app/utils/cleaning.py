@@ -13,16 +13,26 @@ Functions:
 import re
 import nltk
 import string
+import nltk
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
 from nltk import pos_tag
 from nltk.corpus import wordnet
-nltk.download("punkt")
-nltk.download("stopwords")
-nltk.download('averaged_perceptron_tagger')
-nltk.download('wordnet')
-nltk.download('omw-1.4')
 from nltk.corpus import stopwords
+
+# Set NLTK data path
+nltk.data.path.append("/tmp/nltk_data")
+
+# Ensure NLTK data is available
+def ensure_nltk_data():
+    for resource in ["punkt", "stopwords", "averaged_perceptron_tagger", "wordnet", "omw-1.4"]:
+        try:
+            nltk.data.find(f"tokenizers/{resource}")
+        except LookupError:
+            nltk.download(resource, quiet=True)
+
+# Call this function at the start of your script
+ensure_nltk_data()
 
 def remove_features(data_str):
     """
