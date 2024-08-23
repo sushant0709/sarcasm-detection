@@ -28,6 +28,9 @@ jobs:
           pip install --upgrade pip
           pip install pipenv && pipenv install --dev
 
+      - name: Download NLTK data
+        run: pipenv run python -m nltk.downloader punkt stopwords averaged_perceptron_tagger wordnet omw-1.4
+
       - name: Run unit tests
         run: pipenv run pytest tests/unit_tests/
 
@@ -60,13 +63,13 @@ jobs:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
       - name: Initialize Terraform Configuration
-        working-directory: "terraform"
+        working-directory: 'terraform'
         env:
           TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
         run: terraform init -input=false
 
       - name: Import existing resources
-        working-directory: "terraform"
+        working-directory: 'terraform'
         env:
           TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
           TF_VAR_aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -81,7 +84,7 @@ jobs:
               echo "Resource $1 already exists in state, skipping import"
             fi
           }
-          
+
           import_if_not_exists "aws_iam_role.ec2_role" "mlops-zc-sd-dev-ec2-role"
           import_if_not_exists "module.ec2_rds.aws_db_subnet_group.db_subnet_group" "mlops-zc-sd-db-subnet-group-dev"
           import_if_not_exists "module.ecr.aws_ecr_repository.ecr_repo" "mlops-zc-sd-dev-ecr-repo"
@@ -91,7 +94,7 @@ jobs:
 
       - name: Terraform plan
         id: tf-plan
-        working-directory: "terraform"
+        working-directory: 'terraform'
         env:
           TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
           TF_VAR_aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -108,7 +111,7 @@ jobs:
 
       - name: Terraform apply
         id: tf-apply
-        working-directory: "terraform"
+        working-directory: 'terraform'
         if: ${{ steps.tf-plan.outcome }} == 'success'
         env:
           TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
@@ -121,7 +124,6 @@ jobs:
           echo "ecr_repo=$(terraform output -raw ecr_repo)" >> $GITHUB_OUTPUT
           echo "model_registry_bucket=$(terraform output -raw model_registry_model_bucket)" >> $GITHUB_OUTPUT
           echo "lambda_function=$(terraform output -raw lambda_function)" >> $GITHUB_OUTPUT
-
 
   build-and-deploy:
     name: Build and Deploy
@@ -146,7 +148,7 @@ jobs:
 
       - name: Print variable
         id: print-variable
-        working-directory: "deployment"
+        working-directory: 'deployment'
         run: |
           echo 'Model Registry:  ${{ steps.login-ecr.outputs.registry }}'
           echo 'ECR Repo:  ${{ needs.build-infrastructure.outputs.ecr_repo }}'
