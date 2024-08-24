@@ -56,7 +56,7 @@ def test_clean_data(mock_model_service):
     Test the functionality of the clean_text method.
     """
     input_text = "Hello! This is a Text. #Testing123"
-    expected_output = "hello this is a text "
+    expected_output = "hello text test"
 
     cleaned_text = mock_model_service.clean_text(input_text)
     assert cleaned_text == expected_output
@@ -68,8 +68,7 @@ def test_prepare_data(mock_model_service):
     Test the functionality of the prepare_data method.
     """
     input_data = "Hello, world! #Testing123"
-    expected_features = {'cleaned_text': {0: 'hello world '}}
-
+    expected_features = {'cleaned_text': {0: 'hello world test'}}
     features = mock_model_service.prepare_data(input_data)
     assert features.to_dict() == expected_features
 

@@ -11,7 +11,10 @@ install-aws-cli:
 	sudo apt install unzip
 	cd downloads && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && sudo ./aws/install
 
-test:
+download-nltk-data:
+	pipenv run python -m nltk.downloader punkt stopwords averaged_perceptron_tagger wordnet omw-1.4
+
+test: download-nltk-data
 	pytest tests/unit_tests
 
 # integration_test:
@@ -31,7 +34,7 @@ quality_checks:
 # publish: build integration_test
 # 	LOCAL_IMAGE_NAME=${LOCAL_IMAGE_NAME} bash scripts/publish.sh
 
-setup:
+setup: download-nltk-data
 	# Install pipenv
 	pip install --upgrade pip
 	pip install pipenv
@@ -47,6 +50,10 @@ install-software:
 	# Install Python
 	cd ../downloads && wget https://repo.anaconda.com/archive/Anaconda3-2023.07-1-Linux-x86_64.sh && \
 	bash Anaconda3-2023.07-1-Linux-x86_64.sh
+	echo "export PATH=$HOME/anaconda3/bin:$PATH" >> ~/.bashrc
+
+	# Run bash file
+	source ~/.bashrc
 
 	# Install PostgreSQL
 	sudo dnf update -y
@@ -59,7 +66,7 @@ install-software:
 	# Install docker-compose
 	cd ../downloads && wget https://github.com/docker/compose/releases/download/v2.18.1/docker-compose-linux-x86_64 -O docker-compose && \
 	sudo chmod +x docker-compose
-	echo 'export PATH=$HOME/downloads:$PATH' >> ~/.bashrc
+	echo "export PATH=$HOME/downloads:$PATH" >> ~/.bashrc
 
 	# Run bash file
 	source ~/.bashrc

@@ -11,15 +11,22 @@ Functions:
 """
 
 import re
+import os
 import nltk
 import string
+import nltk
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
 from nltk import pos_tag
 from nltk.corpus import wordnet
-nltk.download("punkt")
-nltk.download("stopwords")
 from nltk.corpus import stopwords
+
+# Check if we're running in a Lambda environment
+if os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    # Use the NLTK_DATA environment variable
+    nltk.data.path.append(os.environ.get('NLTK_DATA', '/opt/nltk_data'))
+    print("NLTK data path:", nltk.data.path)
+    print("Contents of NLTK_DATA:", os.listdir(os.environ.get('NLTK_DATA', '/opt/nltk_data')))
 
 def remove_features(data_str):
     """

@@ -33,7 +33,7 @@ variable "settings" {
     "database" = {
       allocated_storage   = 10            // storage in gigabytes
       engine              = "postgres"    // engine type
-      engine_version      = "14.9"     // engine version
+      engine_version      = "14.10"     // engine version
       instance_class      = "db.t3.micro" // rds instance type
       skip_final_snapshot = true
     },

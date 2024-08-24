@@ -1,12 +1,13 @@
-name: Dev-Environment-CI-CD
+name: Staging-Environment-CI-CD
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - 'feature/*'
+      - staging
 
 permissions:
+  issues: write
   contents: read
 
 jobs:
@@ -37,7 +38,7 @@ jobs:
   build-infrastructure:
     name: Build Infrastructure
     runs-on: ubuntu-latest
-    environment: dev
+    environment: stg
     needs: test
     outputs:
       ecr_repo: ${{ steps.tf-apply.outputs.ecr_repo }}
@@ -68,30 +69,6 @@ jobs:
           TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
         run: terraform init -input=false
 
-      - name: Import existing resources
-        working-directory: 'terraform'
-        env:
-          TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
-          TF_VAR_aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          TF_VAR_aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          TF_VAR_db_username: ${{ secrets.DB_USERNAME }}
-          TF_VAR_db_password: ${{ secrets.DB_PASSWORD}}
-        run: |
-          import_if_not_exists() {
-            if ! terraform state list | grep -q "$1"; then
-              terraform import -var-file="./modules/vars/${TF_WORKSPACE}.tfvars" "$1" "$2"
-            else
-              echo "Resource $1 already exists in state, skipping import"
-            fi
-          }
-
-          import_if_not_exists "aws_iam_role.ec2_role" "mlops-zc-sd-dev-ec2-role"
-          import_if_not_exists "module.ec2_rds.aws_db_subnet_group.db_subnet_group" "mlops-zc-sd-db-subnet-group-dev"
-          import_if_not_exists "module.ecr.aws_ecr_repository.ecr_repo" "mlops-zc-sd-dev-ecr-repo"
-          import_if_not_exists "module.lambda.aws_iam_role.lambda_exec" "mlops-zc-sd-dev-lambda-role"
-          import_if_not_exists "module.model_registry_bucket.aws_s3_bucket.s3_bucket" "mlops-zc-sd-dev-model-registry"
-          import_if_not_exists "module.dataset_bucket.aws_s3_bucket.s3_bucket" "mlops-zc-sd-dev-dataset"
-
       - name: Terraform plan
         id: tf-plan
         working-directory: 'terraform'
@@ -101,13 +78,7 @@ jobs:
           TF_VAR_aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           TF_VAR_db_username: ${{ secrets.DB_USERNAME }}
           TF_VAR_db_password: ${{ secrets.DB_PASSWORD}}
-        run: |
-          terraform plan -var-file="./modules/vars/${TF_WORKSPACE}.tfvars" -input=false || exit_code=$?
-          if [ $exit_code -eq 1 ]; then
-            echo "Terraform plan failed, but continuing..."
-          elif [ $exit_code -gt 1 ]; then
-            exit $exit_code
-          fi
+        run: terraform plan -var-file="./modules/vars/${TF_WORKSPACE}.tfvars" -input=false
 
       - name: Terraform apply
         id: tf-apply
@@ -125,11 +96,30 @@ jobs:
           echo "model_registry_bucket=$(terraform output -raw model_registry_model_bucket)" >> $GITHUB_OUTPUT
           echo "lambda_function=$(terraform output -raw lambda_function)" >> $GITHUB_OUTPUT
 
+  sync-model-registry:
+    name: Sync Model Registry
+    runs-on: ubuntu-latest
+    environment: stg
+    needs: build-infrastructure
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Sync Model Registry
+        env:
+          FROM_BUCKET: s3://${{ secrets.DEV_MODEL_REGISTRY }}/${{ secrets.EXPERIMENT_ID }}/${{ secrets.RUN_ID }}
+          TO_BUCKET: s3://${{ needs.build-infrastructure.outputs.model_registry_bucket }}/${{ secrets.EXPERIMENT_ID }}/${{ secrets.RUN_ID }}
+        run: aws s3 sync $FROM_BUCKET $TO_BUCKET
+
   build-and-deploy:
     name: Build and Deploy
     runs-on: ubuntu-latest
-    environment: dev
-    needs: build-infrastructure
+    environment: stg
+    needs: [build-infrastructure, sync-model-registry]
 
     steps:
       - name: Checkout Code
@@ -182,8 +172,8 @@ jobs:
 
           aws lambda update-function-code --function-name $LAMBDA_FUNCTION --image-uri $IMAGE_URI
 
-  push_to_staging:
-    name: Push Changes to Staging Environment
+  staging_to_production:
+    name: Push Changes to Production Environment
     runs-on: ubuntu-latest
     needs: build-and-deploy
 
@@ -191,10 +181,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Merge Development -> Staging
-        uses: devmasx/merge-branch@master
-        with:
-          type: now
-          target_branch: staging
-          message: Merge development -> staging environment
-          github_token: ${{ secrets.GH_TOKEN }}
+      - name: Open Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: gh pr create --title "Merge Staging to Main" --body "This is a pull request from staging to main." --base main --head staging

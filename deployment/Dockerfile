@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/python:3.9
+FROM public.ecr.aws/lambda/python:3.11
 
 ARG MODEL_BUCKET
 ARG EXPERIMENT_ID
@@ -14,6 +14,17 @@ RUN pip install pipenv
 COPY [ "Pipfile", "Pipfile.lock", "./" ]
 
 RUN pipenv install --system --deploy
+
+# Ensure NLTK is installed
+RUN pip install nltk
+
+# Set the NLTK_DATA environment variable and download NLTK data
+ENV NLTK_DATA=/opt/nltk_data
+RUN mkdir -p $NLTK_DATA
+RUN python -m nltk.downloader -d $NLTK_DATA punkt stopwords averaged_perceptron_tagger wordnet omw-1.4
+
+# Set the NLTK_DATA environment variable
+ENV NLTK_DATA=/opt/nltk_data
 
 COPY ./app ${LAMBDA_TASK_ROOT}
 
