@@ -23,7 +23,10 @@ from nltk.corpus import stopwords
 
 # Check if we're running in a Lambda environment
 if os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
-    nltk.data.path.append("/opt/nltk_data")
+    # Use the NLTK_DATA environment variable
+    nltk.data.path.append(os.environ.get('NLTK_DATA', '/opt/nltk_data'))
+    print("NLTK data path:", nltk.data.path)
+    print("Contents of NLTK_DATA:", os.listdir(os.environ.get('NLTK_DATA', '/opt/nltk_data')))
 
 def remove_features(data_str):
     """
