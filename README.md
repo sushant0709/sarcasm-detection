@@ -2,25 +2,28 @@
 
 This project is a part of the [MLOps Zoomcamp](https://github.com/DataTalksClub/mlops-zoomcamp/tree/main) Project. The aim of the project is to build an end-to-end mlops pipeline.
 
+## Live Demo
+
+You can interact with the Sarcasm Detector through the [Live Link](https://huggingface.co/spaces/sushantK/sarcasm-detector). Explore the demo and see how it performs!
 
 ## Table of Content
 
 - [Sarcasm Detection](#sarcasm-detection)
+  - [Live Demo](#live-demo)
   - [Table of Content](#table-of-content)
   - [Problem Statement](#problem-statement)
   - [Pre-requisites](#pre-requisites)
   - [Infrastructure](#infrastructure)
+    - [Steps to deploy the infrastructure:](#steps-to-deploy-the-infrastructure)
   - [Setup EC2](#setup-ec2)
   - [Exploratory Data Analysis and Modeling](#exploratory-data-analysis-and-modeling)
-  - [Setup the environment](#setup-the-environment)
     - [MLflow Tracking](#mlflow-tracking)
   - [Deployment](#deployment)
-  - [Model Monitoring](#model-monitoring)
   - [CI-CD Pipeline](#ci-cd-pipeline)
   - [Best Practices](#best-practices)
   - [Tests](#tests)
   - [User Interface](#user-interface)
-
+  - [Feedback](#feedback)
 
 ## Problem Statement
 
@@ -139,6 +142,7 @@ sudo yum install git # Also install git if not installed
 make install-software
 make setup
 ````
+
 ## Exploratory Data Analysis and Modeling
 
 The exploratory data analysis and modeling is done in the `notebooks` directory. The exploratory data analysis and modeling is done in the `EDA_plus_modeling.ipynb` notebook.
@@ -167,7 +171,6 @@ You can view in the below image that the model is logged in the S3 bucket.
 
 ![MLflow Logged Model](static/images/mlflow-saved-model.png)
 
-
 ## Deployment
 
 The deployment is done using AWS Lambda and AWS API Gateway. We deploy the docker image to AWS ECR which is used by the AWS Lambda function. The AWS Lambda function is invoked by the AWS API Gateway endpoint.
@@ -177,10 +180,6 @@ To deploy our model, we'll need to convert our notebooks to python scripts. Also
 All the deployment related code is located in the `deployment` directory.
 
 Following best practices for deploying machine learning models, we don't have to manually create the image and push it to AWS ECR.
-
-## Model Monitoring
-
-Work in Progress
 
 ## CI-CD Pipeline
 
@@ -218,6 +217,21 @@ We have written unit tests located in the `tests` directory. To run the unit tes
 ```bash
 make test
 ```
+
 ## User Interface
 
-Work in Progress
+We have created a simple user interface using `Gradio` and deployed on Hugging Face Spaces. The app also has the functionality to take the input through audio as well apart from text input.
+
+Screenshot of the application in the production environment:
+
+Sarcastic Text:
+
+![Sarcastic Text](static/images/sarcastic-text.png)
+
+Non-Sarcastic Audio:
+
+![Non-Sarcastic Audio](static/images/non-sarcastic-audio.png)
+
+## Feedback
+
+We would love to hear your feedback! Please reach out to us at [skhatta@ncsu.edu](mailto:skahtta@ncsu.edu) with your comments or suggestions.
